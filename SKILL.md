@@ -58,6 +58,14 @@ description: Read Codex and Claude Code traces, inspect Git and source files, th
 ~/.agents/skills/visual-vibe-coding/bin/visual-vibe-coding scan-traces --project .
 ```
 
+如果仓库迁移过路径，补历史目录别名：
+
+```bash
+~/.agents/skills/visual-vibe-coding/bin/visual-vibe-coding inspect \
+  --project . \
+  --trace-alias /old/path/to/project
+```
+
 如果你正在这个仓库本身里开发，也可以直接用本地命令：
 
 ```bash
@@ -70,6 +78,7 @@ python3 -m visual_vibe_coding_skill.cli inspect --project .
 - 不要只抄 CLI 结果。高优先级文件要补直接读文件后的确认。
 - 不要声称“全部无风险”。要指出真正会影响维护、上线、排障的地方。
 - 如果轨迹和代码矛盾，优先相信代码和 Git，再说明轨迹为什么可能过时。
+- 如果仓库换过目录导致轨迹丢失，先补 `--trace-alias` 再判断“是否真的没有历史记录”。
 - 如果仓库很大，优先把 `entrypoint -> orchestration -> storage/provider -> tests` 这条链路讲清楚。
 
 ## 安装
