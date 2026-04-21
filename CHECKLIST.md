@@ -70,13 +70,20 @@
 ### 11. 能否迅速了解 `my-project` 中的项目
 
 - 已验证。
-- 已对 `mailclaw` 和 `CyberDate` 做实测。
-- 两个项目都能快速产出：
+- 已对 `mailclaw`、`CyberDate`、`metaAgent` 做实测。
+- 这些项目都能快速产出：
   - 项目用途判断
   - 重点文件顺序
   - 结构图
   - 风险列表
   - 轨迹与 Git 线索
+  - 主逻辑链
+
+补充：
+
+- `mailclaw`：验证多 agent 邮件系统和旧路径 Claude 轨迹 alias。
+- `CyberDate`：验证 Next.js / API / UI / provider 混合项目。
+- `metaAgent`：验证多目录 monorepo，成功抽出 `入口 -> 核心 -> 验证` 主逻辑链。
 
 ### 12. 压力测试可以使用 `mailclaw`
 
