@@ -58,6 +58,7 @@ AI 写出来的项目，最烦的不是“代码烂”。
 
 - 项目用途判断
 - 重点阅读顺序
+- 主逻辑链
 - 目录和文件的结构摘要
 - Mermaid 结构图
 - 轨迹高频文件和近期任务线索
@@ -111,6 +112,13 @@ flowchart LR
 - 命中了 4 条 Codex 轨迹
 - 直接把 `src/components/connect-workbench.tsx`、`src/lib/ai/providers.ts`、`src/app/api/connect/exchange/route.ts` 拉成主链路
 - 避开了 lockfile 噪音，把重点放回界面、AI provider、API 路由和关键脚本
+
+又补跑了 `metaAgent`：
+
+- 扫描了 220 个文本/代码文件
+- 命中了 5 条 Codex 轨迹
+- 在 monorepo 里抽出了 `services/browser-runner/src/index.ts -> services/browser-runner/src/live.ts -> services/browser-runner/test/browser-runner.test.ts` 这条主逻辑链
+- 能把 README 热点、核心 runtime、skill draft 模块、审批 API 和 smoke script 放进同一张图里
 
 还单独验证了 Claude Code 轨迹兼容：
 
