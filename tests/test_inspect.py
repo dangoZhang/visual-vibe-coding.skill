@@ -31,10 +31,12 @@ def test_inspect_project_builds_mermaid_and_file_notes(tmp_path: Path) -> None:
     assert payload["project_name"] == "demo-mail-agent"
     assert payload["files_scanned"] >= 4
     assert "```mermaid" in markdown
+    assert "## 主逻辑链" in markdown
     assert any(item["relpath"] == "src/index.ts" for item in payload["file_notes"])
     reading_paths = [item["path"] for item in payload["reading_order"]]
     assert "tests/runtime.test.ts" not in reading_paths[:2]
     assert "pnpm-lock.yaml" not in reading_paths
+    assert payload["logic_chain"]
 
 
 def test_inspect_project_rejects_missing_path(tmp_path: Path) -> None:
