@@ -62,6 +62,7 @@ def inspect_project(
     ]
     file_notes = [asdict(note) for note in project_scan.files]
     mermaid = render_mermaid(project_scan.mermaid_edges)
+    logic_chain = _build_logic_chain(project_scan.files)
 
     payload = {
         "project_root": str(project_scan.project_root),
@@ -71,6 +72,7 @@ def inspect_project(
         "files_scanned": len(project_scan.files),
         "files_skipped": project_scan.skipped_files,
         "reading_order": reading_order,
+        "logic_chain": logic_chain,
         "directory_summary": [{"directory": name, "count": count} for name, count in project_scan.directory_summary],
         "mermaid": mermaid,
         "trace": {
@@ -147,6 +149,8 @@ def _select_reading_order(notes: list, limit: int) -> list:
     category_counts: Counter[str] = Counter()
 
     for note in notes:
+        if not note.reasons:
+            continue
         if category_counts[note.category] >= category_limits.get(note.category, 2):
             continue
         bucket = _note_bucket(note.relpath)
@@ -155,6 +159,18 @@ def _select_reading_order(notes: list, limit: int) -> list:
             continue
         selected.append(note)
         bucket_counts[bucket] += 1
+        category_counts[note.category] += 1
+        if len(selected) >= limit:
+            return selected
+
+    for note in notes:
+        if note in selected:
+            continue
+        if not note.reasons:
+            continue
+        if category_counts[note.category] >= category_limits.get(note.category, 2):
+            continue
+        selected.append(note)
         category_counts[note.category] += 1
         if len(selected) >= limit:
             return selected
@@ -178,3 +194,31 @@ def _note_bucket(relpath: str) -> str:
     if parts[0] == "src" and len(parts) >= 2:
         return f"{parts[0]}/{parts[1]}"
     return parts[0]
+
+
+def _build_logic_chain(notes: list) -> list[dict[str, str]]:
+    stages = [
+        ("入口", lambda note: note.is_entrypoint and note.category == "source"),
+        ("核心", lambda note: note.role_hint in {"运行时编排", "执行引擎", "业务逻辑", "接口层", "记忆层", "线程路由"}),
+        ("依赖", lambda note: note.role_hint in {"外部服务适配层", "邮件服务适配层", "存储层", "数据访问层"}),
+        ("验证", lambda note: note.category == "test"),
+    ]
+    chain: list[dict[str, str]] = []
+    used_paths: set[str] = set()
+    for label, predicate in stages:
+        for note in notes:
+            if note.relpath in used_paths:
+                continue
+            if not predicate(note):
+                continue
+            chain.append(
+                {
+                    "stage": label,
+                    "path": note.relpath,
+                    "role_hint": note.role_hint,
+                    "why": "，".join(note.reasons[:3]) if note.reasons else note.behavior.rstrip("。"),
+                }
+            )
+            used_paths.add(note.relpath)
+            break
+    return chain
