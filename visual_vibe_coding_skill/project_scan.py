@@ -32,6 +32,8 @@ SKIP_DIRS = {
     "output",
     ".turbo",
     ".demo",
+    ".vercel",
+    ".temp",
     "docs",
     "assets",
     "state",
@@ -117,6 +119,14 @@ SPECIAL_FILES = {
     ".env.example",
 }
 
+SKIP_FILES = {
+    "pnpm-lock.yaml",
+    "package-lock.json",
+    "yarn.lock",
+    "bun.lock",
+    "Cargo.lock",
+}
+
 JS_IMPORT_RE = re.compile(r"""(?:import|export)\s+.*?\sfrom\s+['"]([^'"]+)['"]|require\(\s*['"]([^'"]+)['"]\s*\)""")
 PY_IMPORT_RE = re.compile(r"^(?:from\s+([.\w]+)\s+import|import\s+([\w.]+))", re.MULTILINE)
 PY_SYMBOL_RE = re.compile(r"^(?:async\s+def|def|class)\s+([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE)
@@ -148,7 +158,7 @@ def scan_project(
         text = path.read_text(encoding="utf-8", errors="ignore")
         category = _classify_category(path, relpath)
         language = _detect_language(path)
-        is_entrypoint = relpath in entrypoints or _looks_like_entrypoint(relpath)
+        is_entrypoint = relpath in entrypoints or _looks_like_entrypoint(relpath, category, language)
         symbols = _extract_symbols(text, language)
         raw_imports = _extract_import_specs(text, language)
         role_hint = _guess_role_hint(relpath, category, is_entrypoint)
@@ -321,6 +331,8 @@ def _should_skip_file(path: Path) -> bool:
 
 
 def _should_read_file(path: Path) -> bool:
+    if path.name in SKIP_FILES:
+        return False
     if path.name in SPECIAL_FILES:
         return True
     if path.suffix.lower() in BINARY_SUFFIXES:
@@ -382,21 +394,26 @@ def _detect_language(path: Path) -> str:
     }.get(suffix, "text")
 
 
-def _looks_like_entrypoint(relpath: str) -> bool:
+def _looks_like_entrypoint(relpath: str, category: str, language: str) -> bool:
+    if category != "source":
+        return False
+    if language not in {"python", "typescript", "tsx", "javascript", "jsx", "go", "rust", "java", "ruby", "php", "swift", "kotlin"}:
+        return False
     lower = relpath.lower()
-    return any(
-        token in lower
-        for token in [
-            "src/index",
-            "src/app",
-            "src/main",
-            "src/cli",
-            "/cli/",
-            "app.py",
-            "main.py",
-            "cli.py",
-        ]
-    )
+    patterns = [
+        "src/index.",
+        "src/main.",
+        "src/cli.",
+        "src/app.",
+        "/cli/",
+        "/route.",
+        "/page.",
+        "/layout.",
+        "app.py",
+        "main.py",
+        "cli.py",
+    ]
+    return any(token in lower for token in patterns)
 
 
 def _extract_symbols(text: str, language: str) -> list[str]:
