@@ -1,0 +1,24 @@
+[project]
+name = "visual-vibe-coding-skill"
+version = "0.1.0"
+description = "Read Codex and Claude traces, inspect Git and source files, then generate a visual code-logic map for vibe-coded projects."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "tomli>=2; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest>=8,<9",
+]
+
+[project.scripts]
+visual-vibe-coding = "visual_vibe_coding_skill.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["visual_vibe_coding_skill"]

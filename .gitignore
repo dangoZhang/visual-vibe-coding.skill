@@ -1,0 +1,9 @@
+.DS_Store
+__pycache__/
+.pytest_cache/
+.venv/
+*.pyc
+*.pyo
+*.egg-info/
+.visual-vibe-coding-output/
+reference-vibecoding-skill/
