@@ -23,14 +23,20 @@ FILE_MENTION_PATTERN = re.compile(
 )
 
 
-def discover_trace_digest(project_root: Path, source: str = "auto", limit: int = 6) -> TraceDigest:
+def discover_trace_digest(
+    project_root: Path,
+    source: str = "auto",
+    limit: int = 6,
+    trace_aliases: list[str] | None = None,
+) -> TraceDigest:
     project_root = project_root.expanduser().resolve()
+    match_roots = _build_match_roots(project_root, trace_aliases)
     sessions: list[TraceSession] = []
 
     if source in {"auto", "codex"}:
-        sessions.extend(_load_recent_codex_sessions(project_root, limit))
+        sessions.extend(_load_recent_codex_sessions(project_root, limit, match_roots))
     if source in {"auto", "claude"}:
-        sessions.extend(_load_recent_claude_sessions(project_root, limit))
+        sessions.extend(_load_recent_claude_sessions(project_root, limit, match_roots))
 
     sessions.sort(key=lambda item: item.timestamp or "", reverse=True)
     sessions = sessions[:limit]
@@ -76,10 +82,10 @@ def iter_default_trace_roots(source: str = "auto") -> list[Path]:
     return roots
 
 
-def _load_recent_codex_sessions(project_root: Path, limit: int) -> list[TraceSession]:
+def _load_recent_codex_sessions(project_root: Path, limit: int, match_roots: set[Path]) -> list[TraceSession]:
     sessions: list[TraceSession] = []
     for path in _recent_jsonl_files(CODEX_LOCATIONS, limit * 24):
-        session = _parse_codex_session(path, project_root)
+        session = _parse_codex_session(path, project_root, match_roots)
         if session is None:
             continue
         sessions.append(session)
@@ -88,10 +94,10 @@ def _load_recent_codex_sessions(project_root: Path, limit: int) -> list[TraceSes
     return sessions
 
 
-def _load_recent_claude_sessions(project_root: Path, limit: int) -> list[TraceSession]:
+def _load_recent_claude_sessions(project_root: Path, limit: int, match_roots: set[Path]) -> list[TraceSession]:
     sessions: list[TraceSession] = []
     for path in _recent_jsonl_files(CLAUDE_LOCATIONS, limit * 24):
-        session = _parse_claude_session(path, project_root)
+        session = _parse_claude_session(path, project_root, match_roots)
         if session is None:
             continue
         sessions.append(session)
@@ -100,7 +106,7 @@ def _load_recent_claude_sessions(project_root: Path, limit: int) -> list[TraceSe
     return sessions
 
 
-def _parse_codex_session(path: Path, project_root: Path) -> TraceSession | None:
+def _parse_codex_session(path: Path, project_root: Path, match_roots: set[Path] | None = None) -> TraceSession | None:
     cwd: str | None = None
     timestamp: str | None = None
     user_messages: list[str] = []
@@ -113,7 +119,7 @@ def _parse_codex_session(path: Path, project_root: Path) -> TraceSession | None:
         if item_type == "session_meta":
             cwd = (payload.get("cwd") or "").strip() or None
             timestamp = payload.get("timestamp") or item.get("timestamp")
-            if not _cwd_matches_project(cwd, project_root):
+            if not _cwd_matches_project(cwd, project_root, match_roots):
                 return None
             continue
         if cwd is None:
@@ -142,7 +148,7 @@ def _parse_codex_session(path: Path, project_root: Path) -> TraceSession | None:
     )
 
 
-def _parse_claude_session(path: Path, project_root: Path) -> TraceSession | None:
+def _parse_claude_session(path: Path, project_root: Path, match_roots: set[Path] | None = None) -> TraceSession | None:
     cwd: str | None = None
     timestamp: str | None = None
     user_messages: list[str] = []
@@ -155,7 +161,7 @@ def _parse_claude_session(path: Path, project_root: Path) -> TraceSession | None
             candidate_cwd = (item.get("cwd") or "").strip() or None
             if candidate_cwd:
                 cwd = candidate_cwd
-                if not _cwd_matches_project(cwd, project_root):
+                if not _cwd_matches_project(cwd, project_root, match_roots):
                     return None
         if cwd is None:
             continue
@@ -277,12 +283,25 @@ def _normalize_file_mention(token: str, project_root: Path) -> str | None:
     return None
 
 
-def _cwd_matches_project(cwd: str | None, project_root: Path) -> bool:
+def _cwd_matches_project(cwd: str | None, project_root: Path, match_roots: set[Path] | None = None) -> bool:
     if not cwd:
         return False
     cwd_path = Path(cwd).expanduser().resolve(strict=False)
-    root = project_root.resolve(strict=False)
-    return cwd_path == root or str(cwd_path).startswith(f"{root}{os.sep}")
+    roots = match_roots or _build_match_roots(project_root, None)
+    for root in roots:
+        if cwd_path == root or str(cwd_path).startswith(f"{root}{os.sep}"):
+            return True
+    return False
+
+
+def _build_match_roots(project_root: Path, trace_aliases: list[str] | None) -> set[Path]:
+    roots = {project_root.resolve(strict=False)}
+    for alias in trace_aliases or []:
+        cleaned = alias.strip()
+        if not cleaned:
+            continue
+        roots.add(Path(cleaned).expanduser().resolve(strict=False))
+    return roots
 
 
 def _compact_text(text: str) -> str:
