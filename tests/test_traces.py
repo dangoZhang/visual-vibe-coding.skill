@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from visual_vibe_coding_skill.traces import _parse_claude_session, _parse_codex_session
+from visual_vibe_coding_skill.traces import _build_match_roots, _parse_claude_session, _parse_codex_session
 
 
 def test_parse_codex_session_matches_project(tmp_path: Path) -> None:
@@ -66,3 +66,31 @@ def test_parse_claude_session_matches_project(tmp_path: Path) -> None:
     assert session is not None
     assert session.source == "claude"
     assert "src/runtime.ts" in session.mentioned_files
+
+
+def test_parse_claude_session_supports_trace_alias(tmp_path: Path) -> None:
+    project_root = tmp_path / "new-home" / "mailclaw"
+    project_root.mkdir(parents=True)
+    trace_path = tmp_path / "claude-alias.jsonl"
+    old_cwd = tmp_path / "old-home" / "mailclaw"
+    events = [
+        {
+            "type": "user",
+            "timestamp": "2026-04-21T11:00:00Z",
+            "cwd": str(old_cwd),
+            "message": {"content": "Review src/runtime.ts for risks."},
+        },
+        {
+            "type": "assistant",
+            "timestamp": "2026-04-21T11:01:00Z",
+            "cwd": str(old_cwd),
+            "message": {"content": [{"type": "text", "text": "I see src/runtime.ts calling SMTP."}]},
+        },
+    ]
+    trace_path.write_text("\n".join(json.dumps(item) for item in events), encoding="utf-8")
+
+    match_roots = _build_match_roots(project_root, [str(old_cwd)])
+    session = _parse_claude_session(trace_path, project_root, match_roots)
+
+    assert session is not None
+    assert session.cwd == str(old_cwd)
