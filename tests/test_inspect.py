@@ -32,3 +32,16 @@ def test_inspect_project_builds_mermaid_and_file_notes(tmp_path: Path) -> None:
     assert payload["files_scanned"] >= 4
     assert "```mermaid" in markdown
     assert any(item["relpath"] == "src/index.ts" for item in payload["file_notes"])
+    reading_paths = [item["path"] for item in payload["reading_order"]]
+    assert "tests/runtime.test.ts" not in reading_paths[:2]
+    assert "pnpm-lock.yaml" not in reading_paths
+
+
+def test_inspect_project_rejects_missing_path(tmp_path: Path) -> None:
+    missing = tmp_path / "missing-project"
+    try:
+        inspect_project(missing, trace_source="none", memory_enabled=False)
+    except SystemExit as exc:
+        assert "Project path does not exist" in str(exc)
+    else:  # pragma: no cover
+        raise AssertionError("inspect_project should stop on a missing project path")
