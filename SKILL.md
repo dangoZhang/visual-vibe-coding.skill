@@ -45,7 +45,7 @@ description: Read Codex and Claude Code traces, inspect Git and source files, th
 默认命令：
 
 ```bash
-python3 -m visual_vibe_coding_skill.cli inspect \
+~/.agents/skills/visual-vibe-coding/bin/visual-vibe-coding inspect \
   --project . \
   --memory \
   --output .visual-vibe-coding-output/latest-report.md \
@@ -55,7 +55,13 @@ python3 -m visual_vibe_coding_skill.cli inspect \
 如果只想看轨迹匹配情况：
 
 ```bash
-python3 -m visual_vibe_coding_skill.cli scan-traces --project .
+~/.agents/skills/visual-vibe-coding/bin/visual-vibe-coding scan-traces --project .
+```
+
+如果你正在这个仓库本身里开发，也可以直接用本地命令：
+
+```bash
+python3 -m visual_vibe_coding_skill.cli inspect --project .
 ```
 
 ## 回答规则

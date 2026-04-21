@@ -129,6 +129,18 @@ python3 -m pytest -q
 
 ## 最常用命令
 
+安装到 Codex / Claude Code 之后，直接用 skill 自带 wrapper：
+
+```bash
+~/.agents/skills/visual-vibe-coding/bin/visual-vibe-coding inspect \
+  --project /path/to/repo \
+  --memory \
+  --output /tmp/project-report.md \
+  --json-output /tmp/project-report.json
+```
+
+在仓库里本地开发时，也可以直接跑模块：
+
 ```bash
 python3 -m visual_vibe_coding_skill.cli inspect \
   --project /path/to/repo \
