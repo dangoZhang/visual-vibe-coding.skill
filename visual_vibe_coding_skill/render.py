@@ -28,6 +28,12 @@ def render_markdown(payload: dict) -> str:
         reason = "，".join(item["reasons"]) if item["reasons"] else "基础骨架文件"
         lines.append(f"{index}. `{item['path']}`: {item['role_hint']}。优先原因：{reason}。")
     lines.append("")
+    if payload["logic_chain"]:
+        lines.append("## 主逻辑链")
+        lines.append("")
+        for item in payload["logic_chain"]:
+            lines.append(f"- {item['stage']}：`{item['path']}` · {item['role_hint']} · {item['why']}")
+        lines.append("")
     lines.append("## 结构图")
     lines.append("")
     lines.append("```text")
