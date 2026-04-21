@@ -15,14 +15,21 @@ def inspect_project(
     project_root: str | Path,
     *,
     trace_source: str = "auto",
+    trace_aliases: list[str] | None = None,
     trace_limit: int = 6,
     max_files: int = 600,
     memory_enabled: bool = True,
 ) -> tuple[dict, str]:
     requested_root = Path(project_root).expanduser().resolve()
+    if not requested_root.exists():
+        raise SystemExit(f"Project path does not exist: {requested_root}")
     git_snapshot = capture_git_snapshot(requested_root)
     scan_root = git_snapshot.root or requested_root
-    trace_digest = discover_trace_digest(scan_root, source=trace_source, limit=trace_limit) if trace_source != "none" else discover_trace_digest(scan_root, source="none", limit=0)
+    trace_digest = (
+        discover_trace_digest(scan_root, source=trace_source, limit=trace_limit, trace_aliases=trace_aliases)
+        if trace_source != "none"
+        else discover_trace_digest(scan_root, source="none", limit=0, trace_aliases=trace_aliases)
+    )
     project_scan = scan_project(scan_root, trace_digest, git_snapshot, max_files=max_files)
     scanned_paths = {note.relpath for note in project_scan.files}
     filtered_hot_files = [
@@ -130,21 +137,35 @@ def _build_trace_summary(sessions: list, hot_files: list[tuple[str, int]]) -> st
 def _select_reading_order(notes: list, limit: int) -> list:
     selected = []
     bucket_counts: Counter[str] = Counter()
+    category_limits = {
+        "source": 8,
+        "test": 2,
+        "config": 2,
+        "script": 2,
+        "doc": 1,
+    }
+    category_counts: Counter[str] = Counter()
 
     for note in notes:
+        if category_counts[note.category] >= category_limits.get(note.category, 2):
+            continue
         bucket = _note_bucket(note.relpath)
         bucket_limit = 2 if bucket == "src/cli" else 1
         if bucket_counts[bucket] >= bucket_limit:
             continue
         selected.append(note)
         bucket_counts[bucket] += 1
+        category_counts[note.category] += 1
         if len(selected) >= limit:
             return selected
 
     for note in notes:
         if note in selected:
             continue
+        if category_counts[note.category] >= category_limits.get(note.category, 2):
+            continue
         selected.append(note)
+        category_counts[note.category] += 1
         if len(selected) >= limit:
             return selected
     return selected
