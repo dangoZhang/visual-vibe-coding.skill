@@ -19,6 +19,7 @@ def build_parser() -> argparse.ArgumentParser:
     inspect = subparsers.add_parser("inspect", help="Inspect a project and build a visual logic report.")
     inspect.add_argument("--project", default=".", help="Project root to inspect.")
     inspect.add_argument("--trace-source", choices=["auto", "codex", "claude", "none"], default="auto")
+    inspect.add_argument("--trace-alias", action="append", default=[], help="Extra historical project path to match old traces after moving or renaming a repo.")
     inspect.add_argument("--trace-limit", type=int, default=6)
     inspect.add_argument("--max-files", type=int, default=600)
     inspect.add_argument("--memory", dest="memory_enabled", action="store_true")
@@ -30,6 +31,7 @@ def build_parser() -> argparse.ArgumentParser:
     scan = subparsers.add_parser("scan-traces", help="Show which traces match the current project.")
     scan.add_argument("--project", default=".", help="Project root to match against.")
     scan.add_argument("--trace-source", choices=["auto", "codex", "claude"], default="auto")
+    scan.add_argument("--trace-alias", action="append", default=[], help="Extra historical project path to match old traces after moving or renaming a repo.")
     scan.add_argument("--trace-limit", type=int, default=6)
     scan.add_argument("--json-output", help="Write structured JSON output to this file.")
 
@@ -46,6 +48,7 @@ def main() -> None:
         payload, markdown = inspect_project(
             args.project,
             trace_source=args.trace_source,
+            trace_aliases=args.trace_alias,
             trace_limit=args.trace_limit,
             max_files=args.max_files,
             memory_enabled=args.memory_enabled,
@@ -60,6 +63,7 @@ def main() -> None:
         payload, _markdown = inspect_project(
             args.project,
             trace_source=args.trace_source,
+            trace_aliases=args.trace_alias,
             trace_limit=args.trace_limit,
             max_files=1,
             memory_enabled=False,
