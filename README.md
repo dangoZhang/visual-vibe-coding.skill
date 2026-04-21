@@ -105,6 +105,20 @@ flowchart LR
 
 也就是说，这个 skill 已经能在真实的 `my-project` 仓库里快速形成一份可读的项目逻辑地图。
 
+另外又补跑了 `CyberDate`：
+
+- 扫描了 165 个文本/代码文件
+- 命中了 4 条 Codex 轨迹
+- 直接把 `src/components/connect-workbench.tsx`、`src/lib/ai/providers.ts`、`src/app/api/connect/exchange/route.ts` 拉成主链路
+- 避开了 lockfile 噪音，把重点放回界面、AI provider、API 路由和关键脚本
+
+还单独验证了 Claude Code 轨迹兼容：
+
+- 对已经搬过路径的 `mailclaw`，可用 `--trace-alias /Users/zty/mailclaw` 命中旧的 Claude 轨迹
+- 这解决了“项目挪过目录后，历史轨迹丢失”的实际问题
+
+完整逐条验收见 [CHECKLIST.md](./CHECKLIST.md)。
+
 ## 安装
 
 ### Codex
@@ -153,6 +167,15 @@ python3 -m visual_vibe_coding_skill.cli inspect \
 
 ```bash
 python3 -m visual_vibe_coding_skill.cli scan-traces --project /path/to/repo
+```
+
+如果仓库换过路径，补一个旧目录别名继续吃历史轨迹：
+
+```bash
+~/.agents/skills/visual-vibe-coding/bin/visual-vibe-coding scan-traces \
+  --project /path/to/repo \
+  --trace-source claude \
+  --trace-alias /old/path/to/repo
 ```
 
 环境自检：
